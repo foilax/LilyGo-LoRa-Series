@@ -32,6 +32,7 @@
 #include <SensorWireHelper.h>
 #include "LoRaBoards.h"
 
+void calibrate();
 MagnetometerBase *magnetometer;
 
 void setup()
@@ -137,6 +138,18 @@ void setup()
         while (1);
     }
 
+
+
+
+    // Calibration algorithm reference from
+    // https://github.com/CoreElectronics/CE-PiicoDev-QMC6310-MicroPython-Module
+    calibrate();
+
+    Serial.println("Calibration done.");
+    delay(5000);
+
+    
+
     SensorInfo info = magnetometer->getSensorInfo();
     Serial.print("Manufacturer: "); Serial.println(info.manufacturer);
     Serial.print("Model: "); Serial.println(info.model);
@@ -204,6 +217,7 @@ void loop()
         Serial.print("°");
 
         float strength = MagnetometerUtils::calculateMagneticStrength(data);
+        strength = MagnetometerUtils::gaussToMicroTesla(strength);
         Serial.print(" Magnetic Strength: ");
         Serial.print(strength, 2);
         Serial.println(" μT");
@@ -213,4 +227,131 @@ void loop()
         }
     }
     delay(10);
+}
+
+
+
+
+void calibrate()
+{
+    if (!magnetometer)return;
+
+    if (!magnetometer->setOutputDataRate(200.0f)) {
+        Serial.println("Failed to set output data rate");
+        return ;
+    }
+
+    Serial.println("========================================");
+    Serial.println("Calibration Instructions:");
+    Serial.println("1. Rotate sensor in FIGURE-8 pattern");
+    Serial.println("2. Cover all axes (X, Y, Z directions)");
+    Serial.println("3. Rotate slowly and completely");
+    Serial.println("4. Wait for progress bar to complete");
+    Serial.println("5. Expected: Magnetic Strength ~25-65 uT");
+    Serial.println("========================================");
+    Serial.println();
+
+    Serial.println("Place the sensor on the plane and slowly rotate the sensor...");
+    Serial.println("Rotate in FIGURE-8 pattern to cover all directions!");
+    Serial.println();
+
+    int32_t x_min = 65535;
+    int32_t x_max = -65535;
+    int32_t y_min = 65535;
+    int32_t y_max = -65535;
+    int32_t z_min = 65535;
+    int32_t z_max = -65535;
+
+    int32_t range = 1000;
+    int32_t i = 0;
+    int32_t x = 0, y = 0, z = 0;;
+    int16_t x_offset = 0;
+    int16_t y_offset = 0;
+    int16_t z_offset = 0;
+
+    MagnetometerData data;
+    while (i < range) {
+        i += 1;
+
+        if (magnetometer->isDataReady()) {
+
+            magnetometer->readData(data);
+
+            x = (data.raw.x + x) / 2;
+            y = (data.raw.y + y) / 2;
+            z = (data.raw.z + z) / 2;
+            if (x < x_min) {
+                x_min = x;
+                i = 0;
+            }
+            if (x > x_max) {
+                x_max = x;
+                i = 0;
+            }
+            if (y < y_min) {
+                y_min = y;
+                i = 0;
+            }
+            if (y > y_max) {
+                y_max = y;
+                i = 0;
+            }
+            if (z < z_min) {
+                z_min = z;
+                i = 0;
+            }
+            if (z > z_max) {
+                z_max = z;
+                i = 0;
+            }
+            int j = round(10 * i / range);
+
+            Serial.print("[");
+            for (int k = 0; k < j; ++k) {
+                Serial.print("*");
+            }
+            Serial.println("]");
+        }
+        delay(5);
+    }
+
+    x_offset = (x_max + x_min) / 2;
+    y_offset = (y_max + y_min) / 2;
+    z_offset = (z_max + z_min) / 2;
+
+    Serial.print("x_min:");
+    Serial.println(x_min);
+
+    Serial.print("x_max:");
+    Serial.println(x_max);
+
+    Serial.print("y_min:");
+    Serial.println(y_min);
+
+    Serial.print("y_max:");
+    Serial.println(y_max);
+
+    Serial.print("z_min:");
+    Serial.println(z_min);
+
+    Serial.print("z_max:");
+    Serial.println(z_max);
+
+    Serial.print("x_offset:");
+    Serial.println(x_offset);
+
+    Serial.print("y_offset:");
+    Serial.println(y_offset);
+
+    Serial.print("z_offset:");
+    Serial.println(z_offset);
+
+
+    // Set the calibration value and the user calculates the deviation
+    magnetometer->setOffset(x_offset, y_offset, z_offset);
+
+    Serial.println();
+    Serial.println("Calibration complete!");
+    Serial.println("Check if Magnetic Strength is ~25-65 uT");
+    Serial.println("If too low, repeat calibration with better rotation");
 }

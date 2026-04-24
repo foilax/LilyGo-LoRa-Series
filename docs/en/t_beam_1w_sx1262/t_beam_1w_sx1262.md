@@ -141,10 +141,6 @@
 | BOOT    | Boot mode button, customizable |
 | RST     | Reset button                   |
 
-* The PWR button is connected to the PMU
-  1. In shutdown mode, press the PWR button to turn on the power supply
-  2. In power-on mode, press the PWR button for 6 seconds (default time) to turn off the power supply
-
 ### LED Description
 
 * IO18 LED

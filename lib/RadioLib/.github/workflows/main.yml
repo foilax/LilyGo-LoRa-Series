@@ -83,12 +83,14 @@ jobs:
               echo "skip-pattern=(STM32WL|LR11x0_Firmware_Update)" >> $GITHUB_OUTPUT
               echo "options=':xtal=80,ResetMethod=ck,CrystalFreq=26,FlashFreq=40,FlashMode=qio,eesz=512K'" >> $GITHUB_OUTPUT
               echo "index-url=--additional-urls http://arduino.esp8266.com/stable/package_esp8266com_index.json" >> $GITHUB_OUTPUT
-          - id: STMicroelectronics:stm32:GenF3:pnum=BLACKPILL_F303CC
+          - id: STMicroelectronics:stm32:GenF3
             run: |
+              echo "options=':pnum=BLACKPILL_F303CC'" >> $GITHUB_OUTPUT
               echo "index-url=--additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/package_stmicroelectronics_index.json" >> $GITHUB_OUTPUT
               echo "skip-pattern=(STM32WL|LR11x0_Firmware_Update)" >> $GITHUB_OUTPUT
-          - id: STMicroelectronics:stm32:Nucleo_64:pnum=NUCLEO_WL55JC1
+          - id: STMicroelectronics:stm32:Nucleo_64
             run: |
+              echo "options=':pnum=NUCLEO_WL55JC1'" >> $GITHUB_OUTPUT
               # Do *not* skip STM32WL examples
               echo "skip-pattern=(LR11x0_Firmware_Update)" >> $GITHUB_OUTPUT
               echo "index-url=--additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/package_stmicroelectronics_index.json" >> $GITHUB_OUTPUT
@@ -183,19 +185,20 @@ jobs:
           cd $PWD/extras/test/ci
           ./build_examples.sh ${{ matrix.id }} "${{ steps.prep.outputs.skip-pattern }}" ${{ steps.prep.outputs.options }}
       
+      - name: Extract short commit hash
+        id: short-hash
+        run: echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
+      
       - name: Parse sizes
         if: ${{ env.run-build == 'true' }}
         run:
           |
           cd $PWD/extras/test/ci
           ./parse_size.sh ${{ matrix.id }}
-      
-      - name: Extract short commit hash
-        id: short-hash
-        run: echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
+          cat size_${{ steps.short-hash.outputs.short_sha }}_${{ steps.split.outputs._0 }}-${{ steps.split.outputs._1 }}-${{ steps.split.outputs._2 }}.csv
       
       - name: Upload size report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: size-file-${{ steps.split.outputs._0 }}-${{ steps.split.outputs._1 }}-${{ steps.split.outputs._2 }}
           path: extras/test/ci/size_${{ steps.short-hash.outputs.short_sha }}_${{ steps.split.outputs._0 }}-${{ steps.split.outputs._1 }}-${{ steps.split.outputs._2 }}.csv
@@ -203,6 +206,7 @@ jobs:
   metrics:
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Set up SSH
         run: |
@@ -221,7 +225,7 @@ jobs:
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
       
       - name: Download size artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: aggregated-sizes
       
@@ -250,9 +254,13 @@ jobs:
 
       - name: Clone ESP-IDF
         run: |
+          rm -rf ~/esp
           mkdir -p ~/esp
           cd ~/esp
-          git clone --recursive https://github.com/espressif/esp-idf.git
+          git clone https://github.com/espressif/esp-idf.git
+          cd esp-idf
+          git checkout v5.4.3
+          git submodule update --init --recursive
       
       - name: Install ESP-IDF
         run: |
@@ -289,6 +297,7 @@ jobs:
           LIBTOCK_C_DIRECTORY="$(pwd)/libtock-c" ./build.sh
 
   rpi-build:
+    if: false # self-hosted runner temporarily disabled
     runs-on: [self-hosted, ARM64]
     steps:
       - name: Checkout repository
@@ -320,6 +329,7 @@ jobs:
           ./build.sh
 
   rpi-test:
+    if: false # self-hosted runner temporarily disabled
     needs: rpi-build
     runs-on: [self-hosted, ARM64]
     steps:
@@ -346,7 +356,7 @@ jobs:
           mkdir -p ~/rpi-pico
           cd ~/rpi-pico
           git clone https://github.com/raspberrypi/pico-sdk.git
-          cd pico-sdk && git checkout 1.5.1
+          cd pico-sdk && git checkout 2.2.0
       
       - name: Build the example
         run: |

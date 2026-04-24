@@ -4,11 +4,19 @@
  * @license   MIT
  * @copyright Copyright (c) 2024  Shenzhen Xin Yuan Electronic Technology Co., Ltd
  * @date      2024-12-18
- * @note      This example is for T-beam V1.2, T-Beam-BPF, T-Beam SUPREME factory examples
- * @note      This example is for T-beam V1.2, T-Beam-BPF, T-Beam SUPREME factory examples
- * @note      This example is for T-beam V1.2, T-Beam-BPF, T-Beam SUPREME factory examples
- * @note      This example is for T-beam V1.2, T-Beam-BPF, T-Beam SUPREME factory examples
- */
+ * @note      This example is for T-beam V1.2, T-Beam-BPF,T-Beam-1W-xxxx, T-Beam SUPREME factory examples
+ * @note      This example is for T-beam V1.2, T-Beam-BPF,T-Beam-1W-xxxx, T-Beam SUPREME factory examples
+ * @note      This example is for T-beam V1.2, T-Beam-BPF,T-Beam-1W-xxxx, T-Beam SUPREME factory examples
+ * @note      This example is for T-beam V1.2, T-Beam-BPF,T-Beam-1W-xxxx, T-Beam SUPREME factory examples
+ *
+ * | Board            | B1          | B2           |
+ * | ---------------- | ----------- | ------------ |
+ * | T-Bema Supreme   | Boot button | Power button |
+ * | T-Bema 1W SX1262 | Boot button | IO17         |
+ * | T-Bema 1W LR1121 | Boot button | IO17         |
+ * | T-Bema 1W LR2021 | Boot button | IO17         |
+ * |                  |             |              |
+ **/
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -78,64 +86,44 @@ static void beginSensor();
 
 #if     defined(USING_SX1276)
 
-#ifdef T_BEAM_S3_BPF
-// BPF Freq range : 144Mhz ~ 148MHz
-#define CONFIG_RADIO_FREQ           144.0
-#else  /*T_BEAM_S3_BPF*/
-#define CONFIG_RADIO_FREQ           868.0
-#endif /*T_BEAM_S3_BPF*/
-
-#define CONFIG_RADIO_OUTPUT_POWER   17
-#define CONFIG_RADIO_BW             125.0
-
+int txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
 SX1276 radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_DIO1_PIN);
 
 #elif   defined(USING_SX1278)
-#ifdef T_BEAM_S3_BPF
-// BPF Freq range : 144Mhz ~ 148MHz
-#define CONFIG_RADIO_FREQ           144.0
-#else
-#define CONFIG_RADIO_FREQ           433.0
-#endif /*T_BEAM_S3_BPF*/
 
-#define CONFIG_RADIO_OUTPUT_POWER   17
-#define CONFIG_RADIO_BW             125.0
+int txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
 SX1278 radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_DIO1_PIN);
 
 #elif   defined(USING_SX1262)
-#ifndef CONFIG_RADIO_FREQ
-#define CONFIG_RADIO_FREQ           868.0
-#endif
-#define CONFIG_RADIO_OUTPUT_POWER   22
-#define CONFIG_RADIO_BW             125.0
 
+int txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
 SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
 #elif   defined(USING_SX1280)
-#define CONFIG_RADIO_FREQ           2400.0
-#define CONFIG_RADIO_OUTPUT_POWER   13
-#define CONFIG_RADIO_BW             203.125
+
+int txPowerLevel = CONFIG_RADIO_2G4_OUTPUT_POWER;
 SX1280 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
 #elif  defined(USING_SX1280PA)
-#define CONFIG_RADIO_FREQ           2400.0
-#define CONFIG_RADIO_OUTPUT_POWER   3           // PA Version power range : -18 ~ 3dBm
-#define CONFIG_RADIO_BW             203.125
+
+int txPowerLevel = CONFIG_RADIO_2G4_OUTPUT_POWER; // PA Version power range : -18 ~ 3dBm
 SX1280 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
 #elif   defined(USING_LR1121)
 
 // The maximum power of LR1121 2.4G band can only be set to 13 dBm
-#define CONFIG_RADIO_FREQ           2450.0
-#define CONFIG_RADIO_OUTPUT_POWER   13
-#define CONFIG_RADIO_BW             125.0
+// int txPowerLevel = CONFIG_RADIO_2G4_OUTPUT_POWER;
 
 // The maximum power of LR1121 Sub 1G band can only be set to 22 dBm
-// #define CONFIG_RADIO_FREQ           868.0
-// #define CONFIG_RADIO_OUTPUT_POWER   22
-// #define CONFIG_RADIO_BW             125.0
+int txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
 
-LR1121 radio = new Module(RADIO_CS_PIN, RADIO_DIO9_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+LR1121 radio = new Module(RADIO_CS_PIN, RADIO_DIO_IRQ_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+
+#elif defined(USING_LR2021)
+
+int txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
+LR2021 radio = new Module(RADIO_CS_PIN, RADIO_IRQ_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+
 #endif  /*Radio option*/
 
 
@@ -143,6 +131,65 @@ LR1121 radio = new Module(RADIO_CS_PIN, RADIO_DIO9_PIN, RADIO_RST_PIN, RADIO_BUS
 #undef  CONFIG_RADIO_FREQ
 #define CONFIG_RADIO_FREQ           920.0
 #endif
+
+
+#if defined(T_BEAM_1W_LR1121)
+// LR1121 Version PA RF switch table
+static const uint32_t pa_version_rf_switch_dio_pins[] = {
+    RADIOLIB_LR11X0_DIO5, RADIOLIB_LR11X0_DIO6, RADIOLIB_LR11X0_DIO7, RADIOLIB_LR11X0_DIO8, RADIOLIB_NC
+};
+
+static const Module::RfSwitchMode_t low_sub1g_switch_table[] = {
+    // mode                  DIO5  DIO6 DIO7 DIO8
+    { LR11x0::MODE_STBY,   { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_TX,     { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_RX,     { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_TX_HP,  { LOW,  LOW, LOW, HIGH} }, //Sub1G DIO8 SET HIGH
+    { LR11x0::MODE_TX_HF,  { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_GNSS,   { LOW,  LOW, LOW, HIGH} },
+    { LR11x0::MODE_WIFI,   { LOW,  LOW, LOW, HIGH} },
+    END_OF_MODE_TABLE,
+};
+
+static const Module::RfSwitchMode_t high_2g4_switch_table[] = {
+    // mode                  DIO5  DIO6 DIO7 DIO8
+    { LR11x0::MODE_STBY,   { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_TX,     { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_RX,     { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_TX_HP,  { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_TX_HF,  { LOW,  LOW, HIGH, LOW} }, //2.4G TX DIO7 SET HIGH
+    { LR11x0::MODE_GNSS,   { LOW,  LOW, LOW, LOW} },
+    { LR11x0::MODE_WIFI,   { LOW,  HIGH, LOW, LOW} }, //2.4G RX DIO6 SET HIGH
+    END_OF_MODE_TABLE,
+};
+#elif defined(T_BEAM_1W_LR2021)
+// LR1121 Version PA RF switch table
+static const uint32_t pa_version_rf_switch_dio_pins[] = {
+    RADIOLIB_LR2021_DIO5, RADIOLIB_LR2021_DIO6, RADIOLIB_LR2021_DIO7, RADIOLIB_LR2021_DIO8, RADIOLIB_NC
+};
+
+static const Module::RfSwitchMode_t low_sub1g_switch_table[] = {
+    // mode                  DIO5  DIO6 DIO7 DIO8
+    { LR2021::MODE_STBY,   { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_TX,     { LOW,  LOW, LOW, HIGH} }, // Sub1G DIO8 SET HIGH
+    { LR2021::MODE_RX,     { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_RX_HF,  { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_TX_HF,  { LOW,  LOW, LOW, LOW} },
+    END_OF_MODE_TABLE,
+};
+
+static const Module::RfSwitchMode_t high_2g4_switch_table[] = {
+    //2.4G RX DIO6 SET HIGH
+    // mode                  DIO5  DIO6 DIO7 DIO8
+    { LR2021::MODE_STBY,   { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_TX,     { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_RX,     { LOW,  LOW, LOW, LOW} },
+    { LR2021::MODE_RX_HF,  { HIGH,  LOW, LOW, LOW} },
+    { LR2021::MODE_TX_HF,  { LOW,  LOW, HIGH, LOW} }, //2.4G TX DIO7 SET HIGH
+    END_OF_MODE_TABLE,
+};
+#endif /*T_BEAM_1W_LR1121 | T_BEAM_1W_LR2021*/
+
 
 
 enum TransmissionDirection {
@@ -164,6 +211,33 @@ bool            update_use_second = false;
 uint32_t        gps_use_second = 0;
 uint32_t        gps_start_ms = 0;
 extern uint8_t display_address;
+
+static uint8_t freq_index = 0;
+static const float factory_freq[] = {
+#ifdef T_BEAM_S3_BPF
+    144.0, 148.0
+#else
+    433.0, 470.0,
+    850.0, 868.0,
+    915.0, 920.0, 923.0,
+#if defined(USING_LR1121) || defined(USING_LR2021)
+    2400, 2450
+#endif
+#endif
+
+};
+static const char *freq_table[] = {
+#ifdef T_BEAM_S3_BPF
+    "144.0MHz", "148.0MHz"
+#endif
+    "433MHz", "470MHz",
+    "850MHz", "868MHz",
+    "915MHz", "920MHz", "923MHz",
+#if defined(USING_LR1121) || defined(USING_LR2021)
+    "2400MHz", "2450MHz"
+#endif
+};
+static float current_freq = CONFIG_RADIO_FREQ;
 
 FrameCallback   frames[] = {
     hwProbe,
@@ -198,6 +272,8 @@ AceButton       button2;
 #endif /*BUTTON2_PIN*/
 
 String macStr;
+volatile bool freqSelectDone = false;
+volatile bool freqSelectMode = false;
 
 void setFlag(void)
 {
@@ -218,7 +294,10 @@ void sleepDevice()
     radio.sleep();
 
     display->clear();
-    display->drawString(60, 28, "Sleep");
+
+    display->setFont(Roboto_Mono_Medium_12);
+    display->setTextAlignment(TEXT_ALIGN_CENTER);
+    display->drawString(64, 28, "DEVICE ENTER SLEEP");
     display->display();
     delay(2000);
     display->displayOff();
@@ -386,7 +465,9 @@ void sleepDevice()
      * | T-BeamV 1.2 OLED  | ~ 450 uA |
      * | T-BeamV 1.2       | ~ 440 uA |
      * | T-Beam  BPF V1.2  | ~ 350 uA |
-     * | T-Beam  2W v1.0   | ~ 442 uA |
+     * | T-Beam  1W SX1262 | ~ 442 uA |
+     * | T-Beam  1W LR1121 | ~ 450 uA |
+     * | T-Beam  1W LR2021 | ~ 450 uA |
      * | T-BeamS3 Supreme  | ~ 1.45mA |
      *
      */
@@ -437,20 +518,22 @@ void handleMenu()
 #ifdef RADIO_CTRL
         Serial.println("Turn off LAN,Trun on PA, Enter Tx mode.");
         /*
-        * 2W and BPF LoRa LAN Control ,set Low turn off LAN , TX Mode
+        * T-Beam 1W SX1262 Version and T-Beam BPF LoRa LAN Control ,set Low turn off LAN , TX Mode
         * */
         digitalWrite(RADIO_CTRL, LOW);
 #endif /*RADIO_CTRL*/
 
 #ifdef RADIO_TX_CW
-        radio.transmitDirect();
+        {
+            int16_t state = radio.transmitDirect();
+            Serial.printf("transmitDirect:%d\n", state);
+        }
 #else /*RADIO_TX_CW*/
         Serial.println("Start transmit");
         transmissionDirection = TRANSMISSION;
         transmissionState = radio.transmit((uint8_t *)&transmissionCounter, 4);
         if (transmissionState != RADIOLIB_ERR_NONE) {
-            Serial.print(F("[Radio] transmit packet failed! err:"));
-            Serial.println(transmissionState);
+            Serial.printf("[Radio] transmit packet failed! err: %d\n", transmissionState);
         }
 #endif /*RADIO_TX_CW*/
         break;
@@ -459,7 +542,7 @@ void handleMenu()
 #ifdef RADIO_CTRL
         Serial.println("Turn on LAN, Enter Rx mode.");
         /*
-        * 2W and BPF LoRa LAN Control ,set HIGH turn on LAN ,RX Mode
+        * T-Beam 1W SX1262 Version and T-Beam BPF LoRa LAN Control ,set HIGH turn on LAN ,RX Mode
         * */
         digitalWrite(RADIO_CTRL, HIGH);
 #endif /*RADIO_CTRL*/
@@ -467,7 +550,7 @@ void handleMenu()
         transmissionDirection = RECEIVE;
         transmissionState = radio.startReceive();
         if (transmissionState != RADIOLIB_ERR_NONE) {
-            Serial.println(F("[Radio] Received packet failed!"));
+            Serial.printf("[Radio] Received packet failed! err: %d\n", transmissionState);
         }
         break;
 
@@ -475,7 +558,7 @@ void handleMenu()
 #ifdef RADIO_CTRL
         Serial.println("Turn on LAN, Enter Rx mode.");
         /*
-        * 2W and BPF LoRa LAN Control ,set HIGH turn on LAN ,RX Mode
+        * T-Beam 1W SX1262 Version and T-Beam BPF LoRa LAN Control ,set HIGH turn on LAN ,RX Mode
         * */
         digitalWrite(RADIO_CTRL, HIGH);
 #endif /*RADIO_CTRL*/
@@ -489,30 +572,42 @@ void prevButtonHandleEvent(AceButton   *button, uint8_t eventType, uint8_t butto
 {
     switch (eventType) {
     case AceButton::kEventClicked:
-        Serial.printf("prevButtonHandleEvent currentFrames:%d frames_count:%d\n", currentFrames, max_frames);
+        if (freqSelectMode) {
+            freq_index = (freq_index + 1) % (sizeof(freq_table) / sizeof(freq_table[0]));
+        } else {
+            Serial.printf("prevButtonHandleEvent currentFrames:%d frames_count:%d\n", currentFrames, max_frames);
 #ifdef BUTTON2_PIN
-        currentFrames =  ((currentFrames + 1) >= max_frames) ? currentFrames : currentFrames + 1;
+            currentFrames =  ((currentFrames + 1) >= max_frames) ? currentFrames : currentFrames + 1;
 #else /*BUTTON2_PIN*/
-        currentFrames++;
-        currentFrames %= max_frames;
+            currentFrames++;
+            currentFrames %= max_frames;
 #endif /*BUTTON2_PIN*/
-        handleMenu();
+            handleMenu();
+        }
         break;
     case AceButton::kEventLongPressed:
-        sleepDevice();
+        if (!freqSelectMode) {
+            sleepDevice();
+        }
         break;
     default:
         break;
     }
 }
 
+#ifdef BUTTON2_PIN
 void nextButtonHandleEvent(AceButton   *button, uint8_t eventType, uint8_t buttonState)
 {
     switch (eventType) {
     case AceButton::kEventClicked:
-        Serial.printf("nextButtonHandleEvent currentFrames:%d frames_count:%d\n", currentFrames, max_frames);
-        currentFrames =  ((currentFrames - 1) < 0) ? currentFrames : currentFrames - 1;
-        handleMenu();
+        if (freqSelectMode) {
+            int tableSize = sizeof(freq_table) / sizeof(freq_table[0]);
+            freq_index = (freq_index - 1 < 0) ? (tableSize - 1) : freq_index - 1;
+        } else {
+            Serial.printf("nextButtonHandleEvent currentFrames:%d frames_count:%d\n", currentFrames, max_frames);
+            currentFrames =  ((currentFrames - 1) < 0) ? currentFrames : currentFrames - 1;
+            handleMenu();
+        }
         break;
     case AceButton::kEventLongPressed:
         Serial.println("Long pressed!");
@@ -520,9 +615,14 @@ void nextButtonHandleEvent(AceButton   *button, uint8_t eventType, uint8_t butto
         Serial.println("Long pressed! ,on/off FAN");
         digitalWrite(FAN_CTRL, 1 - digitalRead(FAN_CTRL));
 #endif /*FAN_CTRL*/
+        if (freqSelectMode) {
+            freqSelectDone = true;
+        }
         break;
     }
 }
+#endif /*BUTTON2_PIN*/
+
 
 void timeavailable(struct timeval *t)
 {
@@ -660,7 +760,43 @@ void setup()
     Serial.printf("[%s]:", RADIO_TYPE_STR);
     Serial.println(F(" Selected"));
 
-#if defined(RADIO_TX_CW) && !defined(USING_LR1121)
+
+    /***********************
+     * Frequency Selection
+     ***********************/
+    freqSelectMode = true;
+    freqSelectDone = false;
+    freq_index = 0;
+    display->clear();
+    display->setFont(Roboto_Mono_Medium_12);
+    display->setTextAlignment(TEXT_ALIGN_CENTER);
+    while (!freqSelectDone) {
+        display->clear();
+        display->drawString(64, 10, "Select Frequency");
+        display->drawLine(0, 28, 128, 28);
+        display->drawString(64, 32, freq_table[freq_index]);
+        display->drawString(64, 48, "B1:Up B2:Down L:OK");
+        display->display();
+        button.check();
+#ifdef BUTTON2_PIN
+        button2.check();
+#endif
+#ifdef HAS_PMU
+        loopPMU(power_key_pressed, power_key_long_pressed);
+#endif
+        delay(50);
+    }
+    freqSelectMode = false;
+    current_freq = factory_freq[freq_index];
+    Serial.printf("Selected frequency: %s\n", freq_table[freq_index]);
+
+
+
+#if defined(USING_LR2021)
+    radio.irqDioNum = RADIO_DIO_NUM;
+#endif
+
+#if defined(RADIO_TX_CW) && !defined(USING_LR1121) && !defined(USING_LR2021)
     Serial.print("Begin Radio FSK ");
     int  state = radio.beginFSK();
 #else
@@ -674,7 +810,11 @@ void setup()
         Serial.println(F("Failed!"));
     }
 
-    Serial.printf("Freq:%.2f TxPower:%d Bandwidth:%.2f\n", CONFIG_RADIO_FREQ, CONFIG_RADIO_OUTPUT_POWER, CONFIG_RADIO_BW);
+    Serial.printf("\nRadioParams:\n\t->Freq:%.2fMhz\n\tSub1G TxPower:%d\n\t2.4G TxPower:%d\n\tBandwidth:%.2f\n",
+                  factory_freq[freq_index],
+                  CONFIG_RADIO_SUB1G_OUTPUT_POWER,
+                  CONFIG_RADIO_2G4_OUTPUT_POWER,
+                  CONFIG_RADIO_BW);
 
 #if defined(RADIO_RX_PIN) && defined(RADIO_TX_PIN)
     //The SX1280 version needs to set RX, TX antenna switching pins
@@ -690,7 +830,7 @@ void setup()
          *   LR1121        : Allowed values are in range from 150.0 to 960.0 MHz, 1900 - 2200 MHz and 2400 - 2500 MHz. Will also perform calibrations.
          * * * */
 
-        if (radio.setFrequency(CONFIG_RADIO_FREQ) == RADIOLIB_ERR_INVALID_FREQUENCY) {
+        if (radio.setFrequency(factory_freq[freq_index]) == RADIOLIB_ERR_INVALID_FREQUENCY) {
             Serial.println(F("Selected frequency is invalid for this module!"));
             while (true);
         }
@@ -742,6 +882,13 @@ void setup()
         }
 #endif /*RADIO_TX_CW*/
 
+#if  defined(USING_LR1121) || defined(USING_LR2021)
+        if (current_freq < 2400) {
+            txPowerLevel = CONFIG_RADIO_SUB1G_OUTPUT_POWER;
+        } else {
+            txPowerLevel = CONFIG_RADIO_2G4_OUTPUT_POWER;
+        }
+#endif
         /*
         * Sets transmission output power.
         * SX1278/SX1276 :  Allowed values range from -3 to 15 dBm (RFO pin) or +2 to +17 dBm (PA_BOOST pin). High power +20 dBm operation is also supported, on the PA_BOOST pin. Defaults to PA_BOOST.
@@ -749,13 +896,15 @@ void setup()
         * SX1268        :  Allowed values are in range from -9 to 22 dBm.
         * SX1280        :  Allowed values are in range from -18 to 13 dBm. PA Version range : -18 ~ 3dBm
         * LR1121        :  Allowed values are in range from -17 to 22 dBm (high-power PA) or -18 to 13 dBm (High-frequency PA)
+        * LR2021        :  Allowed values are in range from -9 to 22 dBm (sub-GHz PA) or -19 to 12 dBm (high-frequency PA).
+
         * * * */
-        if (radio.setOutputPower(CONFIG_RADIO_OUTPUT_POWER) == RADIOLIB_ERR_INVALID_OUTPUT_POWER) {
+        if (radio.setOutputPower(txPowerLevel) == RADIOLIB_ERR_INVALID_OUTPUT_POWER) {
             Serial.println(F("Selected output power is invalid for this module!"));
             while (true);
         }
 
-#if !defined(USING_SX1280) && !defined(USING_LR1121) && !defined(USING_SX1280PA)
+#if !defined(USING_SX1280) && !defined(USING_LR1121) && !defined(USING_SX1280PA) && !defined(USING_LR2021)
         /*
         * Sets current limit for over current protection at transmitter amplifier.
         * SX1278/SX1276 : Allowed values range from 45 to 120 mA in 5 mA steps and 120 to 240 mA in 10 mA steps.
@@ -787,7 +936,7 @@ void setup()
         }
 
 
-#if  defined(USING_LR1121)
+#if  defined(USING_LR1121) && !defined(T_BEAM_1W_LR1121)
         // LR1121
         // set RF switch configuration for Wio WM1110
         // Wio WM1110 uses DIO5 and DIO6 for RF switching
@@ -812,6 +961,19 @@ void setup()
         // LR1121 TCXO Voltage 2.85~3.15V
         radio.setTCXO(3.0);
 
+#elif defined(USING_LR1121) || defined(USING_LR2021)
+
+        // radio.setDioIrqParams(RADIOLIB_LR11X0_DIO10);
+
+        if (current_freq < 2400) {
+            Serial.printf("Using low frequency switch table for PA version\n");
+            radio.setRfSwitchTable(pa_version_rf_switch_dio_pins, low_sub1g_switch_table);
+        } else {
+            Serial.printf("Using high frequency switch table for PA version\n");
+            radio.setRfSwitchTable(pa_version_rf_switch_dio_pins, high_2g4_switch_table);
+        }
+        // LR1121 TCXO Voltage 2.85~3.15V
+        radio.setTCXO(3.0);
 #endif
 
 #if  defined(USING_SX1262)
@@ -822,6 +984,7 @@ void setup()
         // when new packet is received
         radio.setPacketReceivedAction(setFlag);
 
+        // radio.standby();
         // start listening for LoRa packets
         Serial.println(F("[Radio] Starting to listen ... "));
         state = radio.startReceive();
@@ -840,25 +1003,10 @@ void setup()
 }
 
 // PMU Power key callback
-static uint8_t freq_index = 0;
-const float factory_freq[] = {433.0, 470.0, 850.0, 868.0, 915.0, 923.0
-#if   defined(USING_LR1121)
-                              , 2400, 2450
-#endif
 
-                             };
-float current_freq = CONFIG_RADIO_FREQ;
 
-void power_key_pressed()
+void changeFreq()
 {
-#if defined(JAPAN_MIC_CERTIFICATION) || defined(T_BEAM_S3_BPF)
-    // Turn on/off display
-    static bool isOn = true;
-    isOn ? display->displayOff()  : display->displayOn();
-    isOn ^= 1;
-    return;
-#else /*defined(JAPAN_MIC_CERTIFICATION) || defined(T_BEAM_S3_BPF)*/
-
     // Set freq function
     radio.standby();
 #if  defined(USING_LR1121)
@@ -884,6 +1032,15 @@ void power_key_pressed()
     if (current_freq < 2400) {
         max_tx_power = 22;
         forceHighPower = true;
+        // #ifdef T_BEAM_1W_LR1121
+        //         Serial.printf("Using low frequency switch table for PA version\n");
+        //         radio.setRfSwitchTable(pa_version_rf_switch_dio_pins, high_2g4_switch_table);
+        // #endif
+    } else {
+        // #ifdef T_BEAM_1W_LR1121
+        //         Serial.printf("Using high frequency switch table for PA version\n");
+        //         radio.setRfSwitchTable(pa_version_rf_switch_dio_pins, low_sub1g_switch_table);
+        // #endif
     }
     if (radio.setOutputPower(max_tx_power, forceHighPower) == RADIOLIB_ERR_INVALID_OUTPUT_POWER) {
         Serial.printf("Selected output power %d is invalid for this module!\n", max_tx_power);
@@ -907,6 +1064,33 @@ void power_key_pressed()
             Serial.println(F("[Radio] Received packet failed!"));
         }
         break;
+    }
+}
+
+void power_key_long_pressed()
+{
+    if (freqSelectMode) {
+        freqSelectDone = true;
+    }
+}
+
+void power_key_pressed()
+{
+#if defined(JAPAN_MIC_CERTIFICATION) || defined(T_BEAM_S3_BPF)
+    // Turn on/off display
+    static bool isOn = true;
+    isOn ? display->displayOff()  : display->displayOn();
+    isOn ^= 1;
+    return;
+#else /*defined(JAPAN_MIC_CERTIFICATION) || defined(T_BEAM_S3_BPF)*/
+    // changeFreq();
+    if (freqSelectMode) {
+        int tableSize = sizeof(freq_table) / sizeof(freq_table[0]);
+        freq_index = (freq_index - 1 < 0) ? (tableSize - 1) : freq_index - 1;
+    } else {
+        Serial.printf("nextButtonHandleEvent currentFrames:%d frames_count:%d\n", currentFrames, max_frames);
+        currentFrames =  ((currentFrames - 1) < 0) ? currentFrames : currentFrames - 1;
+        handleMenu();
     }
 #endif /*defined(JAPAN_MIC_CERTIFICATION) || defined(T_BEAM_S3_BPF)*/
 }
@@ -1007,7 +1191,7 @@ void radioTx(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t
         display->drawString(64 + x, 32 + y, buffer);
     } else {
         display->setTextAlignment(TEXT_ALIGN_LEFT);
-        display->drawString(0 + x, 16 + y, "Freq:" + String(current_freq) + "MHz");
+        display->drawString(0 + x, 16 + y, "Freq:" + String(freq_table[freq_index]));
         display->drawString(0 + x, 32 + y, "TX :" + String(transmissionCounter));
     }
 
@@ -1073,8 +1257,8 @@ void radioRx(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t
     } else {
         // The coordinates define the left starting point of the text
         display->setTextAlignment(TEXT_ALIGN_LEFT);
-        display->drawString(0 + x, 16 + y, "Freq:" + String(current_freq) + "MHz");
-        display->drawString(0 + x, 32 + y, "RX :" + String(recvCounter));
+        display->drawString(0 + x, 16 + y, "Freq:" + String(freq_table[freq_index]));
+        display->drawString(0 + x, 32 + y, "RX :"  + String(recvCounter));
         display->drawString(0 + x, 48 + y, "RSSI:" + String(radioRSSI));
     }
 }
@@ -1083,6 +1267,7 @@ void hwProbe(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t
 {
     display->setFont(Roboto_Mono_Medium_12);
     display->setTextAlignment(TEXT_ALIGN_LEFT);
+
 #if defined(T_BEAM_S3_SUPREME)
     display->drawString(x, 3  + y, "6DOF");
     display->drawString(x, 15 + y, "Power");
@@ -1117,6 +1302,7 @@ void hwProbe(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t
     display->drawString(x, 48 + y, "OLED");
 
     display->setTextAlignment(TEXT_ALIGN_CENTER);
+    display->drawString(52 + x, 0 + y, BOARD_VARIANT_NAME " " RADIO_TYPE_STR);
     display->drawString(52 + x, 16 + y,  (deviceOnline & RADIO_ONLINE ) ? "+" : "-");
 
     display->drawString(52  + x, 32 + y, (deviceOnline & GPS_ONLINE ) ? "+" : "-");
@@ -1328,101 +1514,33 @@ void sensorInfo(OLEDDisplay *display, OLEDDisplayUiState *disp_state, int16_t x,
     display->drawString(display->width() + x, y + 48, String(pressure / 1000.0) + " kPa");
 }
 
-
-static const int centreX = 32;
-static const int centreY = 40;
-static const int radius  = 10;
 Madgwick  filter;
 
-int last_dx = centreX, last_dy = centreY, dx, dy;
-
-void arrow(OLEDDisplay *display, int offsetX, int offsetY, int x2, int y2, int x1, int y1, int alength, int awidth, OLEDDISPLAY_COLOR  color)
-{
-    display->setColor(color);
-    float distance;
-    int dx, dy, x2o, y2o, x3, y3, x4, y4, k;
-    distance = sqrt(pow((x1 - x2), 2) + pow((y1 - y2), 2));
-    dx = x2 + (x1 - x2) * alength / distance;
-    dy = y2 + (y1 - y2) * alength / distance;
-    k = awidth / alength;
-    x2o = x2 - dx;
-    y2o = dy - y2;
-    x3 = y2o * k + dx;
-    y3 = x2o * k + dy;
-    x4 = dx - y2o * k;
-    y4 = dy - x2o * k;
-    display->drawLine(x1 + offsetX, y1 + offsetY, offsetX + x2, offsetY + y2);
-    display->drawLine(x1 + offsetX, y1 + offsetY, offsetX + dx, offsetY + dy);
-    display->drawLine(x3 + offsetX, y3 + offsetY, offsetX + x4, offsetY + y4);
-    display->drawLine(x3 + offsetX, y3 + offsetY, offsetX + x2, offsetY + y2);
-    display->drawLine(x2 + offsetX, y2 + offsetY, offsetX + x4, offsetY + y4);
-}
-
-int drawCompass(OLEDDisplay *display, int16_t x, int16_t y, float magX, float magY)
-{
-    int angle;
-    display->drawString(x + 29, y + 16, "N");
-    display->drawString(x + 0,  y + 32, "W");
-    display->drawString(x + 58, y + 32, "E");
-    display->drawString(x + 29, y + 50, "S");
-
-    float heading = atan2(magY, magX); // Result is in radians
-    // Now add the 'Declination Angle' for you location. Declination is the variation in magnetic field at your location.
-    // Find your declination here: http://www.magnetic-declination.com/
-    // At my location it is :  -2° 20' W, or -2.33 Degrees, which needs to be in radians so = -2.33 / 180 * PI = -0.041 West is + E is -
-    // Make declination = 0 if you can't find your Declination value, the error is negible for nearly all locations
-    float declination = -0.041;
-    heading = heading + declination;
-    if (heading < 0)    heading += 2 * PI; // Correct for when signs are reversed.
-    if (heading > 2 * PI) heading -= 2 * PI; // Correct for when heading exceeds 360-degree, especially when declination is included
-    angle = int(heading * 180 / M_PI); // Convert radians to degrees for more a more usual result
-    // For the screen -X = up and +X = down and -Y = left and +Y = right, so does not follow coordinate conventions
-    dx = (0.7 * radius * cos((angle - 90) * 3.14 / 180)) + centreX + x; // calculate X position for the screen coordinates - can be confusing!
-    dy = (0.7 * radius * sin((angle - 90) * 3.14 / 180)) + centreY + y; // calculate Y position for the screen coordinates - can be confusing!
-    arrow(display, x, y,  last_dx,  last_dy,  centreX + x,  centreY + y, 2, 2, BLACK); // Erase last arrow
-    arrow(display, x, y,  dx,  dy,  x + centreX,  centreY + y, 2, 2, WHITE); // Draw arrow in new position
-    return angle;
-}
-
-void getMagData(float *x, float *y)
-{
-    float z = 0;
-    if (!magnetometer) {
-        Serial.println("Magnetometer not initialized");
-        return;
-    }
-    MagnetometerData data;
-    if (magnetometer->readData(data)) {
-        *x = data.magnetic_field.x;
-        *y = data.magnetic_field.y;
-        Serial.printf("Magnetometer data read: x=%.2f, y=%.2f, z=%.2f\n", *x, *y, z);
-    }
-}
 
 void imuInfo(OLEDDisplay *display, OLEDDisplayUiState *disp_state, int16_t x, int16_t y)
 {
-    static float  magX = 0, magY = 0;
-    static int angle = 0;
-    static float roll, pitch, heading;
+    static float roll, pitch, heading, strength;
     static uint32_t interval = 0;
 
+    MagnetometerData data;
     if (millis() - interval > 100) {
-        getMagData(&magX, &magY);
+        if (magnetometer) {
+            if (magnetometer->readData(data)) {
+                strength = MagnetometerUtils::calculateMagneticStrength(data);
+                strength = MagnetometerUtils::gaussToMicroTesla(strength);
+            }
+        }
         interval = millis();
     }
-
-    angle = drawCompass(display, x, y, magX, magY);
 
     display->setFont(Roboto_Mono_Medium_12);
     display->setTextAlignment(TEXT_ALIGN_CENTER);
     display->drawString(64 + x, 0 + y, "IMU");
 
     display->setTextAlignment(TEXT_ALIGN_LEFT);
-    display->setColor(BLACK);
-    display->fillRect(x + 80, y + 16, 25, 50);
-    display->setColor(WHITE);
-    display->setFont(Roboto_Mono_Medium_12);
-    display->drawString(x + 75, y + 16, String(angle) + "°");
+    display->drawString(x + 0, y + 16, "STRENGTH:");
+    display->drawString(x + 0, y + 32, "ROLL:");
+    display->drawString(x + 0, y + 48, "HEADING:");
 
     // Read raw data from IMU
     if (digitalRead(IMU_INT) == HIGH) {
@@ -1434,10 +1552,12 @@ void imuInfo(OLEDDisplay *display, OLEDDisplayUiState *disp_state, int16_t x, in
         roll = filter.getRoll();
         pitch = filter.getPitch();
         heading = filter.getYaw();
-        // Serial.printf("roll:%.2f pitch:%.2f heading:%.2f\n", roll, pitch, heading);
     }
 
-    display->drawString(x + 75, y + 32, String(heading) + "°");
+    display->setTextAlignment(TEXT_ALIGN_RIGHT);
+    display->drawString(display->width() + x, y + 16, String(strength) + "uT");
+    display->drawString(display->width() + x, y + 32, String(roll) + "°");
+    display->drawString(display->width() + x, y + 48, String(heading) + "°");
 }
 
 static void beginSensor()

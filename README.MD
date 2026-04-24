@@ -11,13 +11,14 @@
 - ⚠️ If using the PA version, please carefully read the PA power setting limits on the corresponding page. Incorrect output power settings may damage the PA.
 - ⚠️ 如果使用PA版本，请仔细阅读对应页面的PA功率设置限制，错误的设置输出功率很有可能会损坏PA
 
-
 ### `1` Get Started
 
 - 🔧 **[T-Beam Quick Start](./docs/en/t_beam/t_beam_hw.md)**
 - 🔧 **[T-Beam Supreme Quick Start](./docs/en/t_beam_supreme/t_beam_supreme_hw.md)**
 - 🔧 **[T-Beam BPF Quick Start](./docs/en/t_beam_bpf/t_beam_bpf_hw.md)**
-- 🔧 **[T-Beam 1W Quick Start](./docs/en/t_beam_1w/t_beam_1w_hw.md)**
+- 🔧 **[T-Beam 1W SX1262 Quick Start](./docs/en/t_beam_1w_sx1262/t_beam_1w_sx1262.md)**
+- 🔧 **[T-Beam 1W LR1121 Quick Start](./docs/en/t_beam_1w_lr1121/t_beam_1w_lr1121.md)**
+- 🔧 **[T-Beam 1W LR2021 Quick Start](./docs/en/t_beam_1w_lr2021/t_beam_1w_lr2021.md)**
 - 🔧 **[LoRa32 V1.3 Quick Start](./docs/en/t3_v13_sx1276/t3_v13_sx1276.md)**
 - 🔧 **[LoRa32 V1.6.1 Quick Start](./docs/en/t3_v161_sx1276/t3_v161_sx1276_hw.md)**
 - 🔧 **[LoRa32 TCXO Quick Start](./docs/en/t3_tcxo_sx1276/t3_tcxo_sx1276_hw.md)**

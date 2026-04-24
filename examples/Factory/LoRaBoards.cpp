@@ -326,7 +326,7 @@ bool beginPower()
 
 
     // Set the time of pressing the button to turn off
-    PMU->setPowerKeyPressOffTime(XPOWERS_POWEROFF_4S);
+    PMU->setPowerKeyPressOffTime(XPOWERS_POWEROFF_8S);
     uint8_t opt = PMU->getPowerKeyPressOffTime();
     Serial.print("PowerKeyPressOffTime:");
     switch (opt) {
@@ -407,7 +407,7 @@ void disablePeripherals()
 #endif
 }
 
-void loopPMU(void (*pressed_cb)(void))
+void loopPMU(void (*pressed_cb)(void), void (*long_press_cb)(void))
 {
     if (!PMU) {
         return;
@@ -444,6 +444,9 @@ void loopPMU(void (*pressed_cb)(void))
     }
     if (PMU->isPekeyLongPressIrq()) {
         Serial.println("isPekeyLongPress");
+        if (long_press_cb) {
+            long_press_cb();
+        }
     }
     if (PMU->isBatChargeDoneIrq()) {
         Serial.println("isBatChargeDone");
@@ -834,7 +837,7 @@ void setupBoards(bool disable_u8g2 )
 
 #ifdef HAS_GPS
 
-#if defined(T_BEAM_S3_SUPREME) || defined(T_BEAM_1W) || defined(T_BEAM_S3_BPF)
+#if defined(T_BEAM_S3_SUPREME) || defined(T_BEAM_1W_SX1262) || defined(T_BEAM_1W_LR1121) || defined(T_BEAM_1W_LR2021) || defined(T_BEAM_S3_BPF)
     // T-Beam v1.2 skips L76K
     find_gps = beginGPS();
 #endif

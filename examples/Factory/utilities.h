@@ -28,7 +28,7 @@
 // 3. --------------T3 V3.0 TCXO-------------------------------
 // Product: https://lilygo.cc/products/t3-tcxo
 
-// #define T3_V3_0_SX1276_TCXO  
+// #define T3_V3_0_SX1276_TCXO
 
 // 4. --------------T-BEAM ESP32-------------------------------
 // Product: https://lilygo.cc/products/t-beam
@@ -46,7 +46,7 @@
 
 // 6. --------------T3 S3 V1.0 or T3 S3 V1.3 -------------------
 // Product: https://lilygo.cc/products/t3s3-v1-0 , same v1.3
-// Product: https://lilygo.cc/products/t3-s3-v1-3 
+// Product: https://lilygo.cc/products/t3-s3-v1-3
 
 // #define T3_S3_V1_2_SX1262
 // #define T3_S3_V1_2_SX1276
@@ -72,9 +72,10 @@
 // #define T_BEAM_S3_BPF
 
 // --------------LoRa 2W -------------------------------------
-// Product: ...
-// #define T_BEAM_1W
-
+// Product: https://lilygo.cc/products/t-beam-1w
+// #define T_BEAM_1W_SX1262
+// #define T_BEAM_1W_LR1121
+// #define T_BEAM_1W_LR2021
 
 
 // #define T3_V1_6_SX1276_TCXO  // Production has stopped
@@ -85,7 +86,6 @@
 #define UNUSED_PIN                   (0)
 
 #if defined(T_BEAM_SX1262) || defined(T_BEAM_SX1276) || defined(T_BEAM_SX1278) || defined(T_BEAM_LR1121)
-
 
 #if   defined(T_BEAM_SX1262)
 #ifndef USING_SX1262
@@ -128,6 +128,7 @@
 
 // LR1121 Only
 #define RADIO_DIO9_PIN              33
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO9_PIN)
 
 
 #define BOARD_LED                   4
@@ -330,6 +331,7 @@
 
 #define RADIO_DIO9_PIN              26      //LR1121 DIO9  
 #define RADIO_BUSY_PIN              32      //LR1121 BUSY  
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO9_PIN)
 
 #endif
 
@@ -384,6 +386,10 @@
 #ifndef USING_SX1280PA
 #define USING_SX1280PA
 #endif
+#pragma message "Using SX1280PA,The transmit power must not exceed 3dBm, otherwise it will cause permanent damage to LoRa."
+#define CONFIG_RADIO_2G4_OUTPUT_POWER   3
+#define CONFIG_RADIO_OUTPUT_POWER CONFIG_RADIO_2G4_OUTPUT_POWER
+
 #elif defined(T3_S3_V1_2_LR1121) ||   defined(ARDUINO_LILYGO_T3S3_LR1121)
 #ifndef USING_LR1121
 #define USING_LR1121
@@ -392,6 +398,10 @@
 #ifndef USING_LR1121PA
 #define USING_LR1121PA
 #endif
+#pragma message "Using LR1121PA,The transmit power must not exceed 0dBm, otherwise it will cause permanent damage to LoRa."
+#define CONFIG_RADIO_2G4_OUTPUT_POWER   0
+#define CONFIG_RADIO_OUTPUT_POWER CONFIG_RADIO_2G4_OUTPUT_POWER
+
 #endif // T3_S3_V1_2_SX1262
 
 
@@ -455,6 +465,7 @@
 
 #define RADIO_DIO9_PIN              36      //LR1121 DIO9  = IO36
 #define RADIO_BUSY_PIN              34      //LR1121 BUSY  = IO34
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO9_PIN)
 
 #define LILYGO_RADIO_2G4_TX_POWER_LIMIT   13   //LR1121 2.4G TX Power Limit
 
@@ -462,6 +473,7 @@
 
 #define RADIO_DIO9_PIN              36      //LR1121 DIO9  = IO36
 #define RADIO_BUSY_PIN              34      //LR1121 BUSY  = IO34
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO9_PIN)
 
 #define LILYGO_RADIO_2G4_TX_POWER_LIMIT   0   //LR1121 2.4G TX Power Limit
 #define USING_LR1121
@@ -521,6 +533,7 @@
 
 // LR1121 Version
 #define RADIO_DIO9_PIN               (1)
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO9_PIN)
 
 #define SPI_MOSI                    (35)
 #define SPI_SCK                     (36)
@@ -686,10 +699,28 @@
 #define BOARD_VARIANT_NAME          "T-Beam BPF"
 
 
-#elif defined(T_BEAM_1W)
+#elif defined(T_BEAM_1W_SX1262) || defined(T_BEAM_1W_LR1121) || defined(T_BEAM_1W_LR2021)
 
+#ifdef T_BEAM_1W_SX1262
 #ifndef USING_SX1262
 #define USING_SX1262
+#endif
+#endif
+
+#ifdef T_BEAM_1W_LR1121
+#ifndef USING_LR1121
+#define USING_LR1121
+#endif
+#pragma message "Using LR1121 PA Version,The transmit power must not exceed 0dBm, otherwise it will cause permanent damage to LoRa."
+#define  CONFIG_RADIO_2G4_OUTPUT_POWER  0
+#endif
+
+#ifdef T_BEAM_1W_LR2021
+#ifndef USING_LR2021
+#define USING_LR2021
+#endif
+
+
 #endif
 
 #define I2C_SDA                     (8)
@@ -720,10 +751,31 @@
 
 #define RADIO_CS_PIN                (15)
 #define RADIO_RST_PIN               (3)
+#define RADIO_BUSY_PIN              (38)
 #define RADIO_LDO_EN                (40)
+
+#if defined(T_BEAM_1W_SX1262)
 #define RADIO_CTRL                  (21)
 #define RADIO_DIO1_PIN              (1)
-#define RADIO_BUSY_PIN              (38)
+#endif
+
+#if defined(T_BEAM_1W_LR1121)
+#define RADIO_DIO10_PIN              (1)      // Connect to DIO10
+#define RADIO_DIO11_PIN             (21)      // Connect to DIO11
+#define RADIO_DIO_IRQ_PIN           (RADIO_DIO11_PIN)
+#pragma message "Using LR2021 PA Version,The transmit power must not exceed 0dBm, otherwise it will cause permanent damage to LoRa."
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    1
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  22
+#endif
+
+#if defined(T_BEAM_1W_LR2021)
+#define RADIO_IRQ_PIN               (1)      // Connect to DIO10
+#define RADIO_DIO11_PIN             (21)      // Connect to DIO11
+#define RADIO_DIO_NUM               (10)      // LR2021 DIO NUM NOT ESP32S3 GPIO NUM
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    8
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  22
+#pragma message "Using LR2021 PA Version,The transmit power must not exceed 8dBm, otherwise it will cause permanent damage to LoRa."
+#endif
 
 #define BOARD_LED                   18
 #define LED_ON                      HIGH
@@ -750,7 +802,7 @@
 
 #define DISPLAY_MODEL               U8G2_SH1106_128X64_NONAME_F_HW_I2C
 #define DISPLAY_MODEL_SSD_LIB       SH1106Wire
-#define BOARD_VARIANT_NAME          "LoRa 2W"
+#define BOARD_VARIANT_NAME          "LoRa 1W"
 
 #else
 #error "When using it for the first time, please define the board model in <utilities.h> 首次使用时，请在<utilities.h> 文件最上方定义板卡模型"
@@ -761,20 +813,103 @@
 
 
 #if  defined(USING_SX1262)
+
 #define RADIO_TYPE_STR  "SX1262"
+
+#ifndef CONFIG_RADIO_SUB1G_OUTPUT_POWER
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  22
+#endif
+
 #elif defined(USING_SX1276)
+
 #define RADIO_TYPE_STR  "SX1276"
+
+#ifndef CONFIG_RADIO_SUB1G_OUTPUT_POWER
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  17
+#endif
+
 #elif defined(USING_SX1278)
+
 #define RADIO_TYPE_STR  "SX1278"
+
+#ifndef CONFIG_RADIO_SUB1G_OUTPUT_POWER
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  17
+#endif
+
+#ifndef CONFIG_RADIO_FREQ
+#define CONFIG_RADIO_FREQ  433.0
+#endif
+
 #elif defined(USING_LR1121)
+
 #define RADIO_TYPE_STR  "LR1121"
+
+#ifndef CONFIG_RADIO_SUB1G_OUTPUT_POWER
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  22
+#endif
+
+#ifndef CONFIG_RADIO_2G4_OUTPUT_POWER
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    13
+#endif
+
 #elif defined(USING_SX1280)
+
 #define RADIO_TYPE_STR  "SX1280"
+
+#ifndef CONFIG_RADIO_2G4_OUTPUT_POWER
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    13
+#endif
+
+#ifndef CONFIG_RADIO_FREQ
+#define CONFIG_RADIO_FREQ 2400.0
+#endif
+
+#ifndef CONFIG_RADIO_BW
+#define CONFIG_RADIO_BW             203.125
+#endif
+
 #elif defined(USING_SX1280PA)
+
 #define RADIO_TYPE_STR  "SX1280PA"
+
+#ifndef CONFIG_RADIO_2G4_OUTPUT_POWER
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    13
+#endif
+
+#ifndef CONFIG_RADIO_FREQ
+#define CONFIG_RADIO_FREQ       2400.0
+#endif
+
+#ifndef CONFIG_RADIO_BW
+#define CONFIG_RADIO_BW             203.125
 #endif
 
 
+#elif defined(USING_LR2021)
+
+#define RADIO_TYPE_STR  "LR2021"
+
+#ifndef CONFIG_RADIO_2G4_OUTPUT_POWER
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    12
+#endif
+
+#ifndef CONFIG_RADIO_SUB1G_OUTPUT_POWER
+#define CONFIG_RADIO_SUB1G_OUTPUT_POWER  22
+#endif
+
+#endif
 
 
+#ifndef CONFIG_RADIO_2G4_OUTPUT_POWER
+#define CONFIG_RADIO_2G4_OUTPUT_POWER    -1
+#endif
 
+
+#ifndef CONFIG_RADIO_FREQ
+#define CONFIG_RADIO_FREQ 868.0
+#endif
+
+
+#ifndef CONFIG_RADIO_BW
+#define CONFIG_RADIO_BW 125.0
+#endif

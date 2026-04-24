@@ -106,7 +106,7 @@ void scanWiFi();
 #ifdef HAS_PMU
 extern XPowersLibInterface *PMU;
 extern bool pmuInterrupt;
-void loopPMU(void (*pressed_cb)(void));
+void loopPMU(void (*pressed_cb)(void), void (*long_press_cb)(void) = NULL);
 bool beginPower();
 void disablePeripherals();
 #else

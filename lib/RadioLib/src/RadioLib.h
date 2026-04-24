@@ -37,6 +37,7 @@
   - PhysicalLayer - FSK and LoRa radio modules
 
   \see https://github.com/jgromes/RadioLib
+  \see https://jgromes.github.io/RadioLib/coverage/src/index.html
 
   \copyright  Copyright (c) 2019 Jan Gromes
 */
@@ -77,6 +78,7 @@
 #include "modules/LR11x0/LR1110.h"
 #include "modules/LR11x0/LR1120.h"
 #include "modules/LR11x0/LR1121.h"
+#include "modules/LR2021/LR2021.h"
 #include "modules/nRF24/nRF24.h"
 #include "modules/RF69/RF69.h"
 #include "modules/RFM2x/RFM22.h"
@@ -115,6 +117,7 @@
 #include "protocols/Print/Print.h"
 #include "protocols/BellModem/BellModem.h"
 #include "protocols/LoRaWAN/LoRaWAN.h"
+#include "protocols/ADSB/ADSB.h"
 
 // utilities
 #include "utils/CRC.h"
